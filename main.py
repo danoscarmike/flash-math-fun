@@ -146,9 +146,8 @@ class NumberSelector:
 class OperationsSelector:
     """Reusable operations selection component"""
 
-    def __init__(self, operations, supported_operations, on_change_callback=None):
-        self.operations = operations
-        self.supported_operations = supported_operations
+    def __init__(self, session_state, on_change_callback=None):
+        self.session_state = session_state
         self.on_change_callback = on_change_callback
 
     def create_ui(self):
@@ -156,10 +155,10 @@ class OperationsSelector:
         with ui.column().classes("gap-4"):
             ui.label("Operations").classes("text-lg font-semibold")
             ui.select(
-                self.supported_operations,
+                self.session_state.supported_operations,
                 multiple=True,
-                value=self.operations,
-            ).bind_value(self, "operations").on(
+                value=self.session_state.operations,
+            ).bind_value(self.session_state, "operations").on(
                 "update:model-value",
                 lambda: self.on_change_callback() if self.on_change_callback else None,
             )
@@ -168,10 +167,8 @@ class OperationsSelector:
 class CardsPerRoundSelector:
     """Reusable cards per round selection component"""
 
-    def __init__(
-        self, cards_per_round, max_possible_cards_func, on_change_callback=None
-    ):
-        self.cards_per_round = cards_per_round
+    def __init__(self, session_state, max_possible_cards_func, on_change_callback=None):
+        self.session_state = session_state
         self.max_possible_cards_func = max_possible_cards_func
         self.on_change_callback = on_change_callback
         self.container = None
@@ -209,13 +206,13 @@ class CardsPerRoundSelector:
         max_valid_option = max(valid_options) if valid_options else 5
 
         # If current selection exceeds the highest valid option, reset to it
-        if self.cards_per_round > max_valid_option:
-            self.cards_per_round = max_valid_option
+        if self.session_state.cards_per_round > max_valid_option:
+            self.session_state.cards_per_round = max_valid_option
 
         with self.container:
-            ui.select(options=options, value=self.cards_per_round).bind_value(
-                self, "cards_per_round"
-            ).on(
+            ui.select(
+                options=options, value=self.session_state.cards_per_round
+            ).bind_value(self.session_state, "cards_per_round").on(
                 "update:model-value",
                 lambda: self.on_change_callback() if self.on_change_callback else None,
             ).classes(
@@ -244,15 +241,14 @@ class SettingsPanel:
 
             # Operations selection
             self.operations_selector = OperationsSelector(
-                self.session_state.operations,
-                self.session_state.supported_operations,
+                self.session_state,
                 on_change_callback=self.on_settings_change,
             )
             self.operations_selector.create_ui()
 
             # Cards per round selection
             self.cards_selector = CardsPerRoundSelector(
-                self.session_state.cards_per_round,
+                self.session_state,
                 self.get_max_possible_cards,
                 on_change_callback=self.on_settings_change,
             )
