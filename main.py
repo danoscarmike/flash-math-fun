@@ -64,6 +64,282 @@ class ConfirmationDialog:
         self.is_open = False
 
 
+class NumberSelector:
+    """Reusable number selection component with checkboxes"""
+
+    def __init__(self, selected_numbers, on_change_callback=None):
+        self.selected_numbers = selected_numbers
+        self.on_change_callback = on_change_callback
+        self.checkbox_vars = {}
+
+    def create_ui(self):
+        """Create the number selection UI"""
+        with ui.column().classes("gap-4"):
+            ui.label("Numbers").classes("text-lg font-semibold")
+            ui.label("Select which number facts to include:").classes(
+                "text-sm text-gray-600"
+            )
+
+            # Select All / Clear All buttons
+            with ui.row().classes("gap-2 mb-2"):
+                ui.button("Select All", on_click=self.select_all).classes(
+                    "text-xs px-2 py-1"
+                )
+                ui.button("Clear All", on_click=self.clear_all).classes(
+                    "text-xs px-2 py-1"
+                )
+
+            # Number checkboxes
+            with ui.row().classes("flex-wrap gap-2 w-full"):
+                for num in range(1, 13):  # 1 to 12
+                    checkbox = ui.checkbox(str(num)).classes("text-sm")
+                    self.checkbox_vars[num] = checkbox
+                    checkbox.value = num in self.selected_numbers
+                    checkbox.on(
+                        "update:model-value",
+                        lambda e, n=num: self.toggle_number(n, e.args),
+                    )
+
+    def toggle_number(self, number, is_checked):
+        """Toggle a number in the selected list"""
+        if is_checked:
+            if number not in self.selected_numbers:
+                self.selected_numbers.append(number)
+        else:
+            if number in self.selected_numbers:
+                self.selected_numbers.remove(number)
+
+        # Ensure at least one number is selected
+        if not self.selected_numbers:
+            self.selected_numbers.append(1)
+
+        # Update all checkbox values to reflect the new state
+        self.update_checkbox_states()
+
+        # Call the change callback if provided
+        if self.on_change_callback:
+            self.on_change_callback()
+
+    def select_all(self):
+        """Select all numbers 1-12"""
+        self.selected_numbers.clear()
+        self.selected_numbers.extend(range(1, 13))
+        self.update_checkbox_states()
+        if self.on_change_callback:
+            self.on_change_callback()
+
+    def clear_all(self):
+        """Clear all numbers and set to just 1"""
+        self.selected_numbers.clear()
+        self.selected_numbers.append(1)
+        self.update_checkbox_states()
+        if self.on_change_callback:
+            self.on_change_callback()
+
+    def update_checkbox_states(self):
+        """Update all checkbox values to reflect current selection"""
+        for num in range(1, 13):
+            if num in self.checkbox_vars:
+                self.checkbox_vars[num].value = num in self.selected_numbers
+
+
+class OperationsSelector:
+    """Reusable operations selection component"""
+
+    def __init__(self, operations, supported_operations, on_change_callback=None):
+        self.operations = operations
+        self.supported_operations = supported_operations
+        self.on_change_callback = on_change_callback
+
+    def create_ui(self):
+        """Create the operations selection UI"""
+        with ui.column().classes("gap-4"):
+            ui.label("Operations").classes("text-lg font-semibold")
+            ui.select(
+                self.supported_operations,
+                multiple=True,
+                value=self.operations,
+            ).bind_value(self, "operations").on(
+                "update:model-value",
+                lambda: self.on_change_callback() if self.on_change_callback else None,
+            )
+
+
+class CardsPerRoundSelector:
+    """Reusable cards per round selection component"""
+
+    def __init__(
+        self, cards_per_round, max_possible_cards_func, on_change_callback=None
+    ):
+        self.cards_per_round = cards_per_round
+        self.max_possible_cards_func = max_possible_cards_func
+        self.on_change_callback = on_change_callback
+        self.container = None
+        self.predefined_options = [5, 10, 15, 20, 25]
+
+    def create_ui(self):
+        """Create the cards per round selection UI"""
+        with ui.column().classes("gap-4"):
+            ui.label("Cards per round").classes("text-lg font-semibold")
+
+            # Create a container for the select that we can refresh
+            with ui.column() as self.container:
+                pass
+
+            # Initialize the select
+            self.update_options()
+
+    def update_options(self):
+        """Update the available options based on max possible cards"""
+        if self.container is None:
+            return
+
+        self.container.clear()
+
+        max_possible = self.max_possible_cards_func()
+
+        # Only include predefined options that don't exceed the maximum possible
+        options = {}
+        for i in self.predefined_options:
+            if i <= max_possible:
+                options[i] = f"{i} cards"
+
+        # Find the highest valid option from the predefined list
+        valid_options = [i for i in self.predefined_options if i <= max_possible]
+        max_valid_option = max(valid_options) if valid_options else 5
+
+        # If current selection exceeds the highest valid option, reset to it
+        if self.cards_per_round > max_valid_option:
+            self.cards_per_round = max_valid_option
+
+        with self.container:
+            ui.select(options=options, value=self.cards_per_round).bind_value(
+                self, "cards_per_round"
+            ).on(
+                "update:model-value",
+                lambda: self.on_change_callback() if self.on_change_callback else None,
+            ).classes(
+                "w-full"
+            )
+
+
+class SettingsPanel:
+    """Main settings panel that combines all configuration components"""
+
+    def __init__(self, session_state):
+        self.session_state = session_state
+        self.number_selector = None
+        self.operations_selector = None
+        self.cards_selector = None
+
+    def create_ui(self):
+        """Create the complete settings panel UI"""
+        with ui.column().classes("gap-6"):
+            # Number selection
+            self.number_selector = NumberSelector(
+                self.session_state.selected_numbers,
+                on_change_callback=self.on_settings_change,
+            )
+            self.number_selector.create_ui()
+
+            # Operations selection
+            self.operations_selector = OperationsSelector(
+                self.session_state.operations,
+                self.session_state.supported_operations,
+                on_change_callback=self.on_settings_change,
+            )
+            self.operations_selector.create_ui()
+
+            # Cards per round selection
+            self.cards_selector = CardsPerRoundSelector(
+                self.session_state.cards_per_round,
+                self.get_max_possible_cards,
+                on_change_callback=self.on_settings_change,
+            )
+            self.cards_selector.create_ui()
+
+            # Spacing and hints
+            ui.space()
+            ui.space()
+            ui.space()
+            ui.separator()
+            ui.label("Hold ARROW UP to see key hints")
+
+    def on_settings_change(self):
+        """Handle changes to any setting"""
+        # Update cards selector when numbers or operations change
+        if self.cards_selector:
+            self.cards_selector.update_options()
+
+        # Regenerate question pool if in setup phase
+        if self.session_state.game_phase == "setup":
+            self.session_state.question_pool = self.generate_question_pool()
+
+    def get_max_possible_cards(self):
+        """Calculate maximum possible unique questions for selected numbers and operations"""
+        if not self.session_state.operations:
+            return len(self.session_state.selected_numbers) * 12
+
+        total_questions = 0
+        for first in self.session_state.selected_numbers:
+            for second in range(1, 13):  # 1 to 12
+                for operation in self.session_state.operations:
+                    if operation == "Addition":
+                        total_questions += 1
+                    elif operation == "Subtraction":
+                        total_questions += 1
+                    elif operation == "Multiplication":
+                        total_questions += 1
+                    elif operation == "Division":
+                        if (second != 0 and first % second == 0) or (
+                            first != 0 and second % first == 0
+                        ):
+                            total_questions += 1
+
+        return total_questions
+
+    def generate_question_pool(self):
+        """Generate all possible unique questions and shuffle them"""
+        questions = []
+
+        if not self.session_state.operations:
+            self.session_state.operations = ["Multiplication"]
+
+        if not self.session_state.selected_numbers:
+            self.session_state.selected_numbers = [1, 2, 3, 4, 5, 6, 7, 8]
+
+        for first in self.session_state.selected_numbers:
+            for second in range(1, 13):  # 1 to 12
+                for operation in self.session_state.operations:
+                    if operation == "Addition":
+                        question = f"{first} + {second}"
+                        answer = first + second
+                    elif operation == "Subtraction":
+                        if first >= second:
+                            question = f"{first} - {second}"
+                            answer = first - second
+                        else:
+                            question = f"{second} - {first}"
+                            answer = second - first
+                    elif operation == "Multiplication":
+                        question = f"{first} x {second}"
+                        answer = first * second
+                    elif operation == "Division":
+                        if second != 0 and first % second == 0:
+                            question = f"{first} ÷ {second}"
+                            answer = first // second
+                        elif first != 0 and second % first == 0:
+                            question = f"{second} ÷ {first}"
+                            answer = second // first
+                        else:
+                            continue
+
+                    questions.append((question, answer))
+
+        random.shuffle(questions)
+        return questions
+
+
 # Global state for the flash card session
 class SessionState:
     def __init__(self):
@@ -88,192 +364,22 @@ class SessionState:
 
 session_state = SessionState()
 
-# Global reference to cards container for refreshing
-cards_container = None
-
 # Global reference to dialogs
 quit_dialog = None
 
-# Global reference to number checkboxes
-number_checkbox_vars = {}
+
+# Old functions removed - now handled by NumberSelector component
 
 
-def select_all_numbers():
-    """Select all numbers 1-12"""
-    session_state.selected_numbers = list(range(1, 13))
-    # Update all checkboxes
-    for num in range(1, 13):
-        if num in number_checkbox_vars:
-            number_checkbox_vars[num].value = True
-    update_cards_select()
-    regenerate_question_pool_if_needed()
+# Old functions removed - now handled by components
 
 
-def clear_all_numbers():
-    """Clear all numbers and set to just 1"""
-    session_state.selected_numbers = [1]
-    # Update all checkboxes
-    for num in range(1, 13):
-        if num in number_checkbox_vars:
-            number_checkbox_vars[num].value = num == 1
-    update_cards_select()
-    regenerate_question_pool_if_needed()
-
-
-@ui.refreshable
-def number_checkboxes():
-    """Create refreshable number checkboxes"""
-    global number_checkbox_vars
-    number_checkbox_vars.clear()
-
-    with ui.row().classes("flex-wrap gap-2 w-full"):
-        for num in range(1, 13):  # 1 to 12
-            checkbox = ui.checkbox(str(num)).classes("text-sm")
-            number_checkbox_vars[num] = checkbox
-            # Set the initial value
-            checkbox.value = num in session_state.selected_numbers
-            # Add the event handler
-            checkbox.on(
-                "update:model-value", lambda e, n=num: toggle_number(n, e.value)
-            )
-
-
-def regenerate_question_pool_if_needed():
-    """Regenerate question pool if game is in setup phase"""
-    if session_state.game_phase == "setup":
-        session_state.question_pool = generate_question_pool()
-
-
-def toggle_number(number, is_checked):
-    """Toggle a number in the selected_numbers list"""
-    if is_checked:
-        if number not in session_state.selected_numbers:
-            session_state.selected_numbers.append(number)
-    else:
-        if number in session_state.selected_numbers:
-            session_state.selected_numbers.remove(number)
-
-    # Ensure at least one number is selected
-    if not session_state.selected_numbers:
-        session_state.selected_numbers = [1]
-
-    # Update all checkbox values to reflect the new state
-    for num in range(1, 13):
-        if num in number_checkbox_vars:
-            number_checkbox_vars[num].value = num in session_state.selected_numbers
-
-    # Refresh the cards select to update available options
-    update_cards_select()
-
-    # Regenerate question pool if game is in setup phase
-    regenerate_question_pool_if_needed()
-
-
-def update_cards_select():
-    """Update the cards per round select options based on current selected numbers and operations"""
-    if cards_container is None:
-        return
-
-    cards_container.clear()
-
-    max_possible = get_max_possible_cards()
-    predefined_options = [5, 10, 15, 20, 25]
-
-    # Only include predefined options that don't exceed the maximum possible
-    options = {}
-    for i in predefined_options:
-        if i <= max_possible:
-            options[i] = f"{i} cards"
-
-    # Find the highest valid option from the predefined list
-    valid_options = [i for i in predefined_options if i <= max_possible]
-    max_valid_option = max(valid_options) if valid_options else 5
-
-    # If current selection exceeds the highest valid option, reset to it
-    if session_state.cards_per_round > max_valid_option:
-        session_state.cards_per_round = max_valid_option
-
-    with cards_container:
-        ui.select(options=options, value=session_state.cards_per_round).bind_value(
-            session_state, "cards_per_round"
-        ).classes("w-full")
-
-
-def get_max_possible_cards():
-    """Calculate maximum possible unique questions for selected numbers and operations"""
-    # If no operations selected, default to multiplication
-    if not session_state.operations:
-        return len(session_state.selected_numbers) * 12
-
-    total_questions = 0
-    for first in session_state.selected_numbers:
-        for second in range(1, 13):  # 1 to 12
-            for operation in session_state.operations:
-                if operation == "Addition":
-                    total_questions += 1
-                elif operation == "Subtraction":
-                    total_questions += 1  # We always generate one subtraction per pair
-                elif operation == "Multiplication":
-                    total_questions += 1
-                elif operation == "Division":
-                    # Only count if it results in a whole number
-                    if (second != 0 and first % second == 0) or (
-                        first != 0 and second % first == 0
-                    ):
-                        total_questions += 1
-
-    return total_questions
-
-
-def generate_question_pool():
-    """Generate all possible unique questions and shuffle them"""
-    questions = []
-
-    # If no operations selected, default to multiplication
-    if not session_state.operations:
-        session_state.operations = ["Multiplication"]
-
-    # If no numbers selected, default to 1-8
-    if not session_state.selected_numbers:
-        session_state.selected_numbers = [1, 2, 3, 4, 5, 6, 7, 8]
-
-    for first in session_state.selected_numbers:
-        for second in range(1, 13):  # 1 to 12
-            for operation in session_state.operations:
-                if operation == "Addition":
-                    question = f"{first} + {second}"
-                    answer = first + second
-                elif operation == "Subtraction":
-                    # Ensure positive results for subtraction
-                    if first >= second:
-                        question = f"{first} - {second}"
-                        answer = first - second
-                    else:
-                        question = f"{second} - {first}"
-                        answer = second - first
-                elif operation == "Multiplication":
-                    question = f"{first} x {second}"
-                    answer = first * second
-                elif operation == "Division":
-                    # Ensure whole number results for division
-                    if second != 0 and first % second == 0:
-                        question = f"{first} ÷ {second}"
-                        answer = first // second
-                    elif first != 0 and second % first == 0:
-                        question = f"{second} ÷ {first}"
-                        answer = second // first
-                    else:
-                        continue  # Skip this combination if it doesn't result in a whole number
-
-                questions.append((question, answer))
-
-    random.shuffle(questions)
-    return questions
+# Old functions removed - now handled by SettingsPanel component
 
 
 def validate_card_count():
     """Ensure cards_per_round doesn't exceed possible unique questions"""
-    max_possible = get_max_possible_cards()
+    max_possible = settings_panel.get_max_possible_cards()
     if session_state.cards_per_round > max_possible:
         session_state.cards_per_round = max_possible
         return False  # Indicates we had to adjust
@@ -284,8 +390,8 @@ def start_game():
     # Validate and adjust card count if necessary
     validate_card_count()
 
-    # Generate question pool
-    session_state.question_pool = generate_question_pool()
+    # Generate question pool using settings panel method
+    session_state.question_pool = settings_panel.generate_question_pool()
 
     session_state.game_phase = "playing"
     session_state.current_card = 0
@@ -383,55 +489,14 @@ with ui.header(elevated=True).style("background-color: #3874c8").classes(
         "flat color=white"
     )
 
+# Create settings panel
+settings_panel = SettingsPanel(session_state)
+
 with ui.right_drawer(fixed=False).style("background-color: #ebf1fa").props(
     "bordered"
 ) as right_drawer:
     ui.label("Settings").classes("text-2xl font-bold mb-6")
-
-    with ui.column().classes("gap-6"):
-        # Number selection - checkboxes for individual numbers
-        ui.label("Numbers").classes("text-lg font-semibold")
-        ui.label("Select which number facts to include:").classes(
-            "text-sm text-gray-600"
-        )
-
-        # Select All / Clear All buttons
-        with ui.row().classes("gap-2 mb-2"):
-            ui.button("Select All", on_click=lambda: select_all_numbers()).classes(
-                "text-xs px-2 py-1"
-            )
-            ui.button("Clear All", on_click=lambda: clear_all_numbers()).classes(
-                "text-xs px-2 py-1"
-            )
-
-        number_checkboxes()
-
-        ui.label("Operations").classes("text-medium font-semibold")
-        ui.select(
-            session_state.supported_operations,
-            multiple=True,
-            value=session_state.operations,
-        ).bind_value(session_state, "operations").on(
-            "update:model-value",
-            lambda: (update_cards_select(), regenerate_question_pool_if_needed()),
-        )
-
-        with ui.column().classes("w-full gap-2"):
-            # Cards per round - dynamic options based on max_facts
-            ui.label("Cards per round").classes("text-lg font-semibold")
-
-        # Create a container for the select that we can refresh
-        with ui.column() as cards_container:
-            pass
-
-        # Initialize the select
-        update_cards_select()
-
-        ui.space()
-        ui.space()
-        ui.space()
-        ui.separator()
-        ui.label("Hold ARROW UP to see key hints")
+    settings_panel.create_ui()
 
 
 with ui.footer().style("background-color: #3874c8"):
