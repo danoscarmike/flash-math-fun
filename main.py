@@ -541,6 +541,18 @@ def card_content():
                 ui.label().bind_text_from(session_state, "current_question").classes(
                     "text-8xl font-bold text-center"
                 ).style("line-height: 1.2;")
+        with ui.linear_progress(show_value=False, size="20px").classes(
+            "w-64"
+        ).bind_value_from(
+            session_state,
+            "current_card",
+            backward=lambda x: x / session_state.cards_per_round,
+        ):
+            ui.label().classes("text-sm text-gray-600 absolute-center").bind_text_from(
+                session_state,
+                "current_card",
+                backward=lambda x: f"{x} of {session_state.cards_per_round}",
+            )
 
     elif session_state.game_phase == "finished":
         with ui.column().classes("items-center gap-6"):
