@@ -4,75 +4,14 @@ from typing import Optional, Callable, Any, Dict, List, Tuple
 from nicegui import ui
 from nicegui.events import KeyEventArguments
 
+from app.components import dialog_context, ui_section
+from app.services import generate_question_pool, get_max_valid_questions
+
 
 # Context Managers for better code organization and error handling
 
 
 def startup():
-    @contextmanager
-    def ui_section(title: str, classes: str = "gap-4"):
-        """Context manager for creating consistent UI sections with error handling"""
-        try:
-            with ui.column().classes(classes):
-                if title:
-                    ui.label(title).classes("text-lg font-semibold")
-                yield
-        except Exception as e:
-            ui.label(f"Error in {title}: {str(e)}").classes("text-red-500")
-            raise
-
-    @contextmanager
-    def dialog_context(
-        title: str, message: str, confirm_text: str = "Yes", cancel_text: str = "No"
-    ):
-        """Context manager for creating dialogs with automatic cleanup"""
-        dialog = None
-        try:
-            with ui.dialog() as dialog, ui.card():
-                ui.label(title).classes("text-2xl font-bold mb-4")
-                ui.label(message).classes("text-lg mb-6")
-                yield dialog
-        except Exception as e:
-            if dialog:
-                dialog.close()
-            raise
-
-    @contextmanager
-    def state_transaction(session_state, callback: Optional[Callable] = None):
-        """Context manager for state changes with automatic rollback on error"""
-        original_state = {
-            "selected_numbers": session_state.selected_numbers.copy(),
-            "operations": session_state.operations.copy(),
-            "cards_per_round": session_state.cards_per_round,
-            "game_phase": session_state.game_phase,
-        }
-
-        try:
-            yield session_state
-            if callback:
-                callback()
-        except Exception as e:
-            # Rollback state on error
-            session_state.selected_numbers = original_state["selected_numbers"]
-            session_state.operations = original_state["operations"]
-            session_state.cards_per_round = original_state["cards_per_round"]
-            session_state.game_phase = original_state["game_phase"]
-            raise
-
-    @contextmanager
-    def question_generation_context(operations: List[str], selected_numbers: List[int]):
-        """Context manager for question generation with validation"""
-        if not operations:
-            operations = ["Multiplication"]
-        if not selected_numbers:
-            selected_numbers = [1, 2, 3, 4, 5, 6, 7, 8]
-
-        questions = []
-        try:
-            yield questions, operations, selected_numbers
-        except Exception as e:
-            ui.label(f"Error generating questions: {str(e)}").classes("text-red-500")
-            raise
 
     class ConfirmationDialog:
         """Reusable confirmation dialog component with context manager support"""
@@ -188,32 +127,48 @@ def startup():
                         checkbox = ui.checkbox(str(num)).classes("text-sm")
                         self.checkbox_vars[num] = checkbox
                         checkbox.value = num in self.selected_numbers
-                        checkbox.on(
-                            "update:model-value",
-                            lambda e, n=num: self.toggle_number(n, e.args),
-                        )
+
+                        # Create a closure to capture the current value of num
+                        def make_handler(n):
+                            def handler():
+                                # Get the current value of the checkbox
+                                is_checked = self.checkbox_vars[n].value
+                                self.toggle_number(n, is_checked)
+
+                            return handler
+
+                        checkbox.on("update:model-value", make_handler(num))
 
         def toggle_number(self, number: int, is_checked: bool):
             """Toggle a number in the selected list"""
+            print(
+                f"NumberSelector: toggle_number called for number {number}, is_checked: {is_checked}"
+            )
             try:
                 if is_checked:
                     if number not in self.selected_numbers:
                         self.selected_numbers.append(number)
+                        print(f"NumberSelector: Added {number} to selected_numbers")
                 else:
                     if number in self.selected_numbers:
                         self.selected_numbers.remove(number)
+                        print(f"NumberSelector: Removed {number} from selected_numbers")
             except Exception as e:
                 ui.label(f"Error toggling number {number}: {str(e)}").classes(
                     "text-red-500"
                 )
                 return
 
+            print(f"NumberSelector: Current selected_numbers: {self.selected_numbers}")
             self._update_ui_after_change()
 
         def _update_ui_after_change(self):
             """Update UI after state change"""
             self.update_checkbox_states()
             if self.on_change_callback:
+                print(
+                    f"NumberSelector: Calling on_change_callback, selected_numbers: {self.selected_numbers}"
+                )
                 self.on_change_callback()
 
         def select_all(self):
@@ -316,10 +271,18 @@ def startup():
 
             self.container.clear()
 
-            max_possible = self.max_possible_cards_func()
+            max_possible = self.max_possible_cards_func(
+                self.session_state.operations, self.session_state.selected_numbers
+            )
+            print(
+                f"CardsPerRoundSelector: update_options called, max_possible: {max_possible}"
+            )
 
             # If no numbers are selected, show a message instead of options
             if max_possible == 0:
+                print(
+                    "CardsPerRoundSelector: No numbers selected, showing error message"
+                )
                 with self.container:
                     ui.label(
                         "Please select at least one number to generate questions"
@@ -340,6 +303,7 @@ def startup():
             if self.session_state.cards_per_round > max_valid_option:
                 self.session_state.cards_per_round = max_valid_option
 
+            print(f"CardsPerRoundSelector: Creating dropdown with options: {options}")
             with self.container:
                 ui.select(
                     options=options, value=self.session_state.cards_per_round
@@ -389,7 +353,7 @@ def startup():
                 # Cards per round selection
                 self.cards_selector = CardsPerRoundSelector(
                     self.session_state,
-                    self.get_max_possible_cards,
+                    get_max_valid_questions,
                     on_change_callback=self.on_settings_change,
                 )
                 self.cards_selector.create_ui()
@@ -403,86 +367,19 @@ def startup():
 
         def on_settings_change(self):
             """Handle changes to any setting"""
+            print(
+                f"SettingsPanel: on_settings_change called, selected_numbers: {self.session_state.selected_numbers}"
+            )
             # Update cards selector when numbers or operations change
             if self.cards_selector:
+                print("SettingsPanel: Updating cards selector options")
                 self.cards_selector.update_options()
 
             # Regenerate question pool if in setup phase
             if self.session_state.game_phase == "setup":
-                self.session_state.question_pool = self.generate_question_pool()
-
-        def get_max_possible_cards(self):
-            """Calculate maximum possible unique questions for selected numbers and operations"""
-            if not self.session_state.selected_numbers:
-                return 0
-
-            if not self.session_state.operations:
-                return len(self.session_state.selected_numbers) * 12
-
-            total_questions = 0
-            for first in self.session_state.selected_numbers:
-                for second in range(1, 13):  # 1 to 12
-                    for operation in self.session_state.operations:
-                        if operation == "Addition":
-                            total_questions += 1
-                        elif operation == "Subtraction":
-                            total_questions += 1
-                        elif operation == "Multiplication":
-                            total_questions += 1
-                        elif operation == "Division":
-                            if (second != 0 and first % second == 0) or (
-                                first != 0 and second % first == 0
-                            ):
-                                total_questions += 1
-
-            return total_questions
-
-        def generate_question_pool(self):
-            """Generate all possible unique questions and shuffle them with context manager"""
-            with question_generation_context(
-                self.session_state.operations, self.session_state.selected_numbers
-            ) as (questions, operations, selected_numbers):
-
-                for first in selected_numbers:
-                    for second in range(1, 13):  # 1 to 12
-                        for operation in operations:
-                            question, answer = self._generate_single_question(
-                                first, second, operation
-                            )
-                            if question and answer is not None:
-                                questions.append((question, answer))
-
-                random.shuffle(questions)
-                return questions
-
-        def _generate_single_question(
-            self, first: int, second: int, operation: str
-        ) -> Tuple[Optional[str], Optional[int]]:
-            """Generate a single question with proper error handling"""
-            try:
-                if operation == "Addition":
-                    return f"{first} + {second}", first + second
-                elif operation == "Subtraction":
-                    if first >= second:
-                        return f"{first} - {second}", first - second
-                    else:
-                        return f"{second} - {first}", second - first
-                elif operation == "Multiplication":
-                    return f"{first} x {second}", first * second
-                elif operation == "Division":
-                    if second != 0 and first % second == 0:
-                        return f"{first} ÷ {second}", first // second
-                    elif first != 0 and second % first == 0:
-                        return f"{second} ÷ {first}", second // first
-                    else:
-                        return None, None
-                else:
-                    return None, None
-            except Exception as e:
-                ui.label(
-                    f"Error generating question {first} {operation} {second}: {str(e)}"
-                ).classes("text-red-500")
-                return None, None
+                self.session_state.question_pool = generate_question_pool(
+                    self.session_state.operations, self.session_state.selected_numbers
+                )
 
     # Global state for the flash card session
     class SessionState:
@@ -510,15 +407,11 @@ def startup():
     # Global reference to dialogs
     quit_dialog = None
 
-    # Old functions removed - now handled by NumberSelector component
-
-    # Old functions removed - now handled by components
-
-    # Old functions removed - now handled by SettingsPanel component
-
     def validate_card_count():
         """Ensure cards_per_round doesn't exceed possible unique questions"""
-        max_possible = settings_panel.get_max_possible_cards()
+        max_possible = get_max_valid_questions(
+            session_state.operations, session_state.selected_numbers
+        )
         if session_state.cards_per_round > max_possible:
             session_state.cards_per_round = max_possible
             return False  # Indicates we had to adjust
@@ -529,7 +422,9 @@ def startup():
         validate_card_count()
 
         # Generate question pool using settings panel method
-        session_state.question_pool = settings_panel.generate_question_pool()
+        session_state.question_pool = generate_question_pool(
+            session_state.operations, session_state.selected_numbers
+        )
 
         session_state.game_phase = "playing"
         session_state.current_card = 0
