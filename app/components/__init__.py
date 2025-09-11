@@ -1,4 +1,4 @@
 from .ui_section import ui_section
-from .dialog_context import dialog_context
+from .confirmation_dialog import ConfirmationDialog
 
-__all__ = ["dialog_context", "ui_section"]
+__all__ = ["ui_section", "ConfirmationDialog"]
