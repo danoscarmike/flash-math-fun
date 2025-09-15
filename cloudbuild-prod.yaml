@@ -1,19 +1,19 @@
-# Google Cloud Build configuration for Flash Math Fun App
-# This is a template file - use cloudbuild-dev.yaml or cloudbuild-prod.yaml for specific environments
+# Google Cloud Build configuration for Flash Math Fun App - PROD Environment
+# This file is used when building from the 'main' branch
 
 # Set environment-specific variables
 substitutions:
   _SERVICE_NAME: 'flash-math-fun'
-  _ENVIRONMENT: 'dev'  # Change to 'prod' for production
+  _ENVIRONMENT: 'prod'
   _REGION: 'us-west2'
-  _MEMORY: '512Mi'
-  _CPU: '1'
-  _MIN_INSTANCES: '0'
-  _MAX_INSTANCES: '10'
+  _MEMORY: '1Gi'
+  _CPU: '2'
+  _MIN_INSTANCES: '1'
+  _MAX_INSTANCES: '20'
   _TIMEOUT: '300'
 
 steps:
-  # Build the container image with environment-specific tag
+  # Build the container image with prod-specific tag
   - name: 'gcr.io/cloud-builders/docker'
     args: 
       - 'build'
@@ -34,7 +34,7 @@ steps:
       - 'push'
       - 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:${_ENVIRONMENT}-latest'
   
-  # Deploy container image to Cloud Run with environment-specific service name
+  # Deploy container image to Cloud Run with prod-specific service name
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
