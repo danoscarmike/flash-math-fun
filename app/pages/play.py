@@ -8,6 +8,7 @@ from app.components import ConfirmationDialog, SettingsPanel
 def play():
     # Global references
     session_state = SessionState()
+    settings_panel = SettingsPanel(session_state)
     quit_dialog = None
 
     def validate_card_count():
@@ -81,9 +82,6 @@ def play():
             if session_state.game_phase == "playing":
                 advance_card()
                 card_content.refresh()
-            elif session_state.game_phase == "finished":
-                reset_game()
-                card_content.refresh()
         elif e.key.arrow_down:
             if session_state.game_phase == "playing":
                 if e.action.keydown:
@@ -119,9 +117,6 @@ def play():
         ui.button(on_click=lambda: right_drawer.toggle(), icon="menu").props(
             "flat color=white"
         )
-
-    # Create settings panel
-    settings_panel = SettingsPanel(session_state)
 
     with ui.right_drawer(fixed=False).style("background-color: #ebf1fa").props(
         "bordered"
