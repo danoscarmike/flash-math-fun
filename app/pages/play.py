@@ -188,7 +188,7 @@ def play():
                     backward=lambda x: f"{x} of {session_state.cards_per_round}",
                 )
 
-        elif session_state.game_phase == "finished":
+        else:
             with ui.column().classes("items-center gap-6"):
                 ui.label("Game Complete!").classes(
                     "text-6xl font-bold text-center"
