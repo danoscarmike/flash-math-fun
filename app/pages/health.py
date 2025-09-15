@@ -1,7 +1,16 @@
-from nicegui import ui
+from datetime import datetime
+
+from fastapi.responses import JSONResponse
+from nicegui import app
 
 
-@ui.page("/health")
+@app.get("/health")
 def health():
     """Health check endpoint for Cloud Run"""
-    return {"status": "healthy", "service": "flash-math-fun"}
+    return JSONResponse(
+        {
+            "status": "ok",
+            "timestamp": datetime.now().isoformat(),
+            "service": "flash-math-fun",
+        }
+    )
