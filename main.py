@@ -1,7 +1,7 @@
 import os
 from nicegui import ui
 
-from app.pages import home
+from app.pages import home, health
 
 home()
 
