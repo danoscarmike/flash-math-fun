@@ -1,6 +1,6 @@
 from nicegui import ui
 
 
-@ui.page("/")
+@ui.page("/home")
 def home():
-    ui.label("Home")
+    ui.button("Play", on_click=lambda: ui.navigate.to("/play"))

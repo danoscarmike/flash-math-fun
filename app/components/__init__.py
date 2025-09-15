@@ -1,4 +1,9 @@
 from .ui_section import ui_section
 from .confirmation_dialog import ConfirmationDialog
+from .settings_drawer import SettingsPanel
 
-__all__ = ["ui_section", "ConfirmationDialog"]
+__all__ = [
+    "ui_section",
+    "ConfirmationDialog",
+    "SettingsPanel",
+]

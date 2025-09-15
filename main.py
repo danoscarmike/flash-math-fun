@@ -1,8 +1,7 @@
 from nicegui import ui
 
+from app.pages import home
 
-from app.startup import startup
-
-startup()
+home()
 
 ui.run()
