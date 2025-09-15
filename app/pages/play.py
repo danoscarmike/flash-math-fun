@@ -112,6 +112,10 @@ def play():
         "items-center justify-between"
     ):
         ui.label("Flash Math Fun!").classes("text-2xl font-bold")
+        ui.space()
+        ui.button(on_click=lambda: ui.navigate.to("/"), icon="home").props(
+            "flat color=white"
+        )
         ui.button(on_click=lambda: right_drawer.toggle(), icon="menu").props(
             "flat color=white"
         )
