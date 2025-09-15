@@ -133,6 +133,10 @@ def play():
 
     @ui.refreshable
     def card_content():
+        if session_state.show_key_hints:
+            show_key_hints()
+            return
+
         if session_state.game_phase == "setup":
             with ui.column().classes("items-center gap-6"):
                 ui.label("Are you ready?").classes(
@@ -146,9 +150,6 @@ def play():
                         card_content.refresh(),
                     ),
                 ).classes("text-xl px-8 py-4")
-
-                if session_state.show_key_hints:
-                    show_key_hints()
 
         elif session_state.game_phase == "playing":
             with ui.column().classes("items-center gap-8"):
@@ -164,8 +165,6 @@ def play():
                     ui.label("Release ARROW DOWN to go back to the question").classes(
                         "text-lg text-gray-600"
                     )
-                elif session_state.show_key_hints:
-                    show_key_hints()
                 else:
                     ui.label().bind_text_from(
                         session_state, "current_question"
@@ -186,7 +185,6 @@ def play():
                     "current_card",
                     backward=lambda x: f"{x} of {session_state.cards_per_round}",
                 )
-
         else:
             with ui.column().classes("items-center gap-6"):
                 ui.label("Game Complete!").classes(
@@ -200,9 +198,6 @@ def play():
                         card_content.refresh(),
                     ),
                 ).classes("text-xl px-8 py-4")
-
-                if session_state.show_key_hints:
-                    show_key_hints()
 
     with ui.card().classes("w-full flex flex-col justify-center items-center").style(
         "height: calc(100vh - 200px)"
