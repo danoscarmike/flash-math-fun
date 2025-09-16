@@ -1,16 +1,16 @@
 #!/bin/bash
 
-# Flash Card Magic - Google Cloud Run Deployment Script
+# Flash Math Fun - Google Cloud Run Deployment Script
 # Usage: ./deploy.sh [PROJECT_ID] [REGION]
 
 set -e
 
 # Default values
 PROJECT_ID=${1:-"your-project-id"}
-REGION=${2:-"us-central1"}
-SERVICE_NAME="flash-card-magic"
+REGION=${2:-"us-west2"}
+SERVICE_NAME="flash-math-fun"
 
-echo "🚀 Deploying Flash Card Magic to Google Cloud Run"
+echo "🚀 Deploying Flash Math Fun to Google Cloud Run"
 echo "Project ID: $PROJECT_ID"
 echo "Region: $REGION"
 echo "Service: $SERVICE_NAME"

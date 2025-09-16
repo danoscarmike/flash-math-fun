@@ -9,3 +9,5 @@ venv/
 **/*.pyzw
 **/*.pyzwz
 **/*.pyzwzw
+**/.pytest_cache/
+.coverage
