@@ -1,10 +1,10 @@
 # Google Cloud Build configuration for Flash Math Fun App
-# This is a template file - use cloudbuild-dev.yaml or cloudbuild-prod.yaml for specific environments
+# This is a template file - use cloudbuild-staging.yaml or cloudbuild-prod.yaml for specific environments
 
 # Set environment-specific variables
 substitutions:
   _SERVICE_NAME: 'flash-math-fun'
-  _ENVIRONMENT: 'dev'  # Change to 'prod' for production
+  _ENVIRONMENT: 'staging'  # Change to 'prod' for production
   _REGION: 'us-west2'
   _MEMORY: '512Mi'
   _CPU: '1'

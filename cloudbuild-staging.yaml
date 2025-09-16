@@ -1,10 +1,10 @@
-# Google Cloud Build configuration for Flash Math Fun App - DEV Environment
+# Google Cloud Build configuration for Flash Math Fun App - STAGING Environment
 # This file is used when building from the 'dev' branch
 
 # Set environment-specific variables
 substitutions:
   _SERVICE_NAME: 'flash-math-fun'
-  _ENVIRONMENT: 'dev'
+  _ENVIRONMENT: 'staging'
   _REGION: 'us-west2'
   _MEMORY: '512Mi'
   _CPU: '1'
@@ -13,7 +13,7 @@ substitutions:
   _TIMEOUT: '300'
 
 steps:
-  # Build the container image with dev-specific tag
+  # Build the container image with staging-specific tag
   - name: 'gcr.io/cloud-builders/docker'
     args: 
       - 'build'
@@ -34,7 +34,7 @@ steps:
       - 'push'
       - 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:${_ENVIRONMENT}-latest'
   
-  # Deploy container image to Cloud Run with dev-specific service name
+  # Deploy container image to Cloud Run with staging-specific service name
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:

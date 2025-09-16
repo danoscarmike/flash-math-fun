@@ -4,25 +4,25 @@ This document explains how to set up conditional deployments for dev and prod en
 
 ## Overview
 
-The project now supports separate dev and prod deployments based on GitHub branches:
-- **dev branch** → deploys to `flash-math-fun-dev` service
+The project now supports separate staging and prod deployments based on GitHub branches:
+- **dev branch** → deploys to `flash-math-fun-staging` service
 - **main branch** → deploys to `flash-math-fun-prod` service
 
 ## Files
 
 - `cloudbuild.yaml` - Template configuration (not used directly)
-- `cloudbuild-dev.yaml` - Development environment configuration
+- `cloudbuild-staging.yaml` - Staging environment configuration
 - `cloudbuild-prod.yaml` - Production environment configuration
 
 ## Environment Differences
 
-### Development (dev branch)
-- Service name: `flash-math-fun-dev`
+### Staging (dev branch)
+- Service name: `flash-math-fun-staging`
 - Memory: 512Mi
 - CPU: 1
 - Min instances: 0
 - Max instances: 5
-- Environment variable: `ENVIRONMENT=dev`
+- Environment variable: `ENVIRONMENT=staging`
 
 ### Production (main branch)
 - Service name: `flash-math-fun-prod`
@@ -34,13 +34,13 @@ The project now supports separate dev and prod deployments based on GitHub branc
 
 ## Setting Up Cloud Build Triggers
 
-### 1. Create Dev Trigger
+### 1. Create Staging Trigger
 ```bash
 gcloud builds triggers create github \
   --repo-name=flash_math_fun \
   --repo-owner=YOUR_GITHUB_USERNAME \
   --branch-pattern="^dev$" \
-  --build-config=cloudbuild-dev.yaml
+  --build-config=cloudbuild-staging.yaml
 ```
 
 ### 2. Create Prod Trigger
@@ -54,9 +54,9 @@ gcloud builds triggers create github \
 
 ## Manual Deployment
 
-### Deploy to Dev
+### Deploy to Staging
 ```bash
-gcloud builds submit --config=cloudbuild-dev.yaml
+gcloud builds submit --config=cloudbuild-staging.yaml
 ```
 
 ### Deploy to Prod
@@ -67,7 +67,7 @@ gcloud builds submit --config=cloudbuild-prod.yaml
 ## Service URLs
 
 After deployment, your services will be available at:
-- **Dev**: `https://flash-math-fun-dev-XXXXX-uc.a.run.app`
+- **Staging**: `https://flash-math-fun-staging-XXXXX-uc.a.run.app`
 - **Prod**: `https://flash-math-fun-prod-XXXXX-uc.a.run.app`
 
 ## Health Checks
@@ -78,7 +78,7 @@ Both environments include a health endpoint:
 ## Environment Variables
 
 The `ENVIRONMENT` variable is automatically set based on the deployment:
-- Dev deployments: `ENVIRONMENT=dev`
+- Staging deployments: `ENVIRONMENT=staging`
 - Prod deployments: `ENVIRONMENT=prod`
 
 You can access this in your application code to implement environment-specific behavior.
