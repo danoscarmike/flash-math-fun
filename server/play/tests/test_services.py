@@ -4,8 +4,9 @@ from unittest.mock import patch
 
 import pytest
 
-from app.services import (SessionState, generate_question_pool,
-                          get_max_valid_questions)
+from app.services import (
+    SessionState, generate_question_pool, get_max_valid_questions
+)
 
 
 class TestQuestionGeneration:
