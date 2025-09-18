@@ -1,0 +1,4 @@
+coverage==7.10.6
+fastapi==0.116.1
+nicegui==2.24.1
+pytest==8.4.2

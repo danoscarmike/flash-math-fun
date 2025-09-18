@@ -1,0 +1,19 @@
+my_nicegui_app/
+├── my_package/
+│   ├── __init__.py
+│   ├── startup.py
+│   ├── pages/
+│   │   ├── __init__.py
+│   │   ├── home.py
+│   ├── components/
+│   │   ├── __init__.py
+│   │   ├── custom_button.py
+│   │   └── data_table.py
+│   └── services/
+│       ├── __init__.py
+│       └── data_service.py
+├── main.py
+├── tests/
+│   ├── conftest.py
+│   └── test_pages.py
+└── pytest.ini
