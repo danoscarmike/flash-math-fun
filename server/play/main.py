@@ -8,7 +8,7 @@ from app.pages import health, home
 
 
 # --- Google Analytics ---
-GA_MEASUREMENT_ID = "G-EVJXJQ0KYX"
+GA_MEASUREMENT_ID = os.environ.get("GA_MEASUREMENT_ID", "G-EVJXJQ0KYX")
 
 ga_script = f"""
 <!-- Google tag (gtag.js) -->
