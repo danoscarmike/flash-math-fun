@@ -22,7 +22,7 @@ ga_script = f"""
 </script>
 """
 
-# Add the Google Analytics script to the head of your NiceGUI app only in production
+# Add the Google Analytics script only in production
 if os.environ.get("ENV") == "production":
     ui.add_head_html(ga_script, shared=True)
 

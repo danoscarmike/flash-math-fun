@@ -3,14 +3,12 @@ from app.services import SessionState
 from app.components import FlashCard, SettingsPanel
 
 
-@ui.page("/play")
+@ui.page("/play", title="Play - Flash Math Fun!")
 def play():
     # Global references
     session_state = SessionState()
     settings_panel = SettingsPanel(session_state)
     flash_card = FlashCard(session_state)
-
-    ui.page_title("Flash Math Fun!")
 
     with ui.header(elevated=True).style("background-color: #3874c8").classes(
         "items-center justify-between"
