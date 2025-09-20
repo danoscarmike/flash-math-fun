@@ -6,6 +6,25 @@ from nicegui import app, ui
 
 from app.pages import health, home
 
+
+# --- Google Analytics ---
+GA_MEASUREMENT_ID = "G-EVJXJQ0KYX"
+
+ga_script = f"""
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id={GA_MEASUREMENT_ID}"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){{dataLayer.push(arguments);}}
+  gtag('js', new Date());
+
+  gtag('config', '{GA_MEASUREMENT_ID}');
+</script>
+"""
+
+# Add the Google Analytics script to the head of your NiceGUI app
+ui.add_head_html(ga_script, shared=True)
+
 # --- CORS Configuration ---
 allowed_origins = [
     "http://localhost:8080",  # Your local development URL
@@ -22,8 +41,10 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
+# --- Configure Socket.IO transports ---
 app.config.socket_io_js_transports = ["polling", "websocket"]
 
+# --- Start the application ---
 home()
 
 # Get port from environment variable (required for Cloud Run)
