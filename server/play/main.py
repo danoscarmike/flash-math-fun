@@ -22,8 +22,9 @@ ga_script = f"""
 </script>
 """
 
-# Add the Google Analytics script to the head of your NiceGUI app
-ui.add_head_html(ga_script, shared=True)
+# Add the Google Analytics script to the head of your NiceGUI app only in production
+if os.environ.get("ENV") == "production":
+    ui.add_head_html(ga_script, shared=True)
 
 # --- CORS Configuration ---
 allowed_origins = [
