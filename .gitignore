@@ -14,3 +14,4 @@ venv/
 htmlcov/**
 
 static/.firebase/
+**/firebase-debug.log*

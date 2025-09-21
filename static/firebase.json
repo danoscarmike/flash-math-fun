@@ -1,16 +1,35 @@
 {
-  "hosting": {
-    "public": "public",
-    "ignore": [
-      "firebase.json",
-      "**/.*"
-    ],
-    "rewrites": [{
+  "hosting": [
+    {
+      "target": "production",
+      "public": "public",
+      "ignore": [
+        "firebase.json",
+        "**/.*"
+      ],
+      "rewrites": [{
+          "source": "**",
+          "run": {
+            "serviceId": "flash-math-fun-prod",
+            "region": "us-west2"
+          }
+        }]
+    },
+    {
+      "target": "staging",
+      "public": "public",
+      "site": "flashmath-fun-staging",
+      "ignore": [
+        "firebase.json",
+        "**/.*"
+      ],
+      "rewrites": [{
         "source": "**",
         "run": {
-          "serviceId": "flash-math-fun-prod",
+          "serviceId": "flash-math-fun-staging",
           "region": "us-west2"
         }
       }]
-  }
+    }
+  ]
 }
