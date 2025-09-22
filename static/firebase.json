@@ -18,7 +18,6 @@
     {
       "target": "staging",
       "public": "public",
-      "site": "flashmath-fun-staging",
       "ignore": [
         "firebase.json",
         "**/.*"

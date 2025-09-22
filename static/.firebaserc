@@ -1,5 +1,18 @@
 {
   "projects": {
     "default": "sss-flash-math-fun"
-  }
+  },
+  "targets": {
+    "sss-flash-math-fun": {
+      "hosting": {
+        "staging": [
+          "sss-flash-math-fun-staging"
+        ],
+        "production": [
+          "sss-flash-math-fun"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
